@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/main.css" />
+  <script type="text/javascript" src="js/jquery-1.12.4.min.js"></script>
+  <script type="text/javascript" src="js/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="js/jquery.mousewheel.js"></script>
+  <script src="./js/scroll.js"></script>
+  <title>聊天机器人</title>
+</head>
+
+<body>
+  <div class="wrap">
+    <!-- 头部 Header 区域 -->
+    <div class="header">
+      <h3>小思同学</h3>
+      <img src="img/person01.png" alt="icon" />
+    </div>
+    <!-- 中间 聊天内容区域 -->
+    <div class="main">
+      <ul class="talk_list" style="top: 0px;" id="talk_list">
+        <li class="left_word">
+          <img src="img/person01.png" /> <span>嗨，最近想我没有？</span>
+        </li>
+
+      </ul>
+      <div class="drag_bar" style="display: none;">
+        <div class="drager ui-draggable ui-draggable-handle" style="display: none; height: 412.628px;"></div>
+      </div>
+    </div>
+    <!-- 底部 消息编辑区域 -->
+    <div class="footer">
+      <img src="img/person02.png" alt="icon" />
+      <input type="text" placeholder="说的什么吧..." class="input_txt" id="ipt" />
+      <input type="button" value="发 送" class="input_sub" id="btnSend" />
+    </div>
+  </div>
+  <!-- 注意：只要为 audio 指定了新的 src 属性，而且指定了 autoplay，那么，语音就会自动播放 -->
+  <audio src="" id="voice" autoplay style="display: none;"></audio>
+
+  <script>
+    // 自己的JS
+    // 1. 点击发送按钮的时候，把自己说的话放到页面中
+    $('#btnSend').on('click', function () {
+      // 获取自己输入的内容
+      var myWord = $('#ipt').val().trim();
+      if (myWord === '') {
+        return; // 如果自己什么都没写，所以什么都不做
+      }
+      var str = `<li class="right_word">
+          <img src="img/person02.png" /> <span>${myWord}</span>
+        </li>`;
+      $('#talk_list').append(str);
+      // 清空输入框
+      $('#ipt').val('');
+      // 重置滚动条
+      resetui();
+      // 获取对方的回应
+      getMsg(myWord);
+    });
+
+    // 2. 调用接口，获取对方说的话，然后也放到页面中
+    function getMsg(text) {
+      $.get('http://www.liulongbin.top:3006/api/robot', { spoken: text }, function (res) {
+        // console.log(res);
+        if (res.message == 'success') {
+          var str = `<li class="left_word">
+          <img src="img/person02.png" /> <span>${res.data.info.text}</span>
+        </li>`;
+          $('#talk_list').append(str);
+          resetui();
+          // 把文字转成语音
+          toVoice(res.data.info.text);
+        }
+      });
+    }
+
+    // 3. 调用接口，把文字转成声音
+    function toVoice (x) {
+      $.get('http://www.liulongbin.top:3006/api/synthesize', {text: x}, function (res) {
+        // console.log(res);
+        if (res.status === 200) {
+          $('#voice').attr('src', res.voiceUrl);
+        }
+      });
+    }
+
+
+    // 4. 处理一下，按下回车，也可以发送消息
+    $('#ipt').keyup(function (e) {
+      // 通过事件对象获取键盘的keyCode
+      // console.log(e.keyCode); // 这个可用。但是jQuery还自己封装了一个 which 属性，也是用于获取键盘的keyCode
+      // console.log(e.which);
+      if (e.which === 13) {
+        // 说明按下了回车。按回车，要执行的代码和点击按钮要执行的代码一样
+        // $('#btnSend').click(); // 让点击按钮的事件触发
+        // $('#btnSend').trigger('click'); // 让点击按钮的事件触发
+        $('#btnSend').triggerHandler('click'); // 让点击按钮的事件触发
+      }
+     });
+  </script>
+</body>
+
+</html>
